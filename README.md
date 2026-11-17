@@ -1,256 +1,622 @@
+
 # Epiworld
 
-AI-powered epidemic intelligence and forecasting platform. Applies seven
-machine learning models (Random Forest, Ridge, Lasso, SVM, XGBoost, LSTM,
-GRU) to seven infectious diseases across 237+ countries, with an
-integrated AI assistant (EpiGem, via Groq LLaMA 3.1) for platform Q&A.
+**AI-Powered Epidemic Intelligence and Forecasting Platform**
 
-Built with Flask, scikit-learn, TensorFlow/Keras, XGBoost, and Chart.js.
-Research and educational use only.
+Epiworld is an AI-powered epidemic intelligence and forecasting platform designed to analyze infectious disease trends, predict future cases and deaths, and support data-driven public health decisions.
+
+The platform applies **seven machine learning models** across seven infectious diseases and 237+ countries. It integrates an AI assistant, **EpiGem**, powered by Groq LLaMA 3.1, to provide natural-language answers about platform data, forecasts, and methodology.
+
+**Technology Stack:** Flask, Python, scikit-learn, TensorFlow/Keras, XGBoost, Chart.js, and Groq API.
+
+> **Research and educational use only.**
+
+---
 
 ## Objectives
 
-- Forecast future case/death trends per disease using multiple ML models,
-  auto-selecting the best performer per series via walk-forward validation.
-- Present results through a plain-language dashboard: trend direction and a
-  qualitative confidence rating, rather than raw statistical output, so the
-  platform is usable by non-technical stakeholders.
-- Let users upload their own epidemiological data (CSV/Excel/JSON) and get
-  the same analysis and a downloadable PDF report.
-- Provide an in-app assistant scoped strictly to the platform's own data and
-  methodology.
+- Forecast future case and death trends for different infectious diseases using multiple machine learning models.
+- Automatically select the best-performing model for each disease through walk-forward validation.
+- Present predictions through an intuitive dashboard with plain-language trend directions and qualitative confidence ratings.
+- Allow users to upload their own epidemiological datasets in CSV, Excel, and JSON formats.
+- Generate downloadable PDF reports based on uploaded data and model predictions.
+- Provide an integrated AI assistant restricted to the platform's own data and methodology.
+
+---
+
+## Machine Learning Models
+
+Epiworld integrates seven machine learning and deep learning approaches.
+
+| Model | Category | Purpose |
+|---|---|---|
+| Random Forest | Ensemble Learning | Captures nonlinear relationships and complex disease trends |
+| Ridge Regression | Linear Regression | Handles multicollinearity through L2 regularization |
+| Lasso Regression | Linear Regression | Performs feature selection through L1 regularization |
+| Support Vector Machine (SVM) | Machine Learning | Models nonlinear patterns using kernel-based learning |
+| XGBoost | Gradient Boosting | Captures complex patterns through sequential boosting |
+| LSTM | Deep Learning | Learns long-term temporal dependencies in epidemiological sequences |
+| GRU | Deep Learning | Models sequential patterns with a computationally efficient recurrent architecture |
+
+The platform evaluates the available models and automatically selects the best-performing model for each disease series using out-of-sample R².
+
+---
+
+## Supported Infectious Diseases
+
+The bundled reference dataset covers seven infectious diseases:
+
+1. COVID-19
+2. AIDS/HIV
+3. Malaria
+4. Dengue
+5. Measles
+6. Hepatitis B
+7. Polio
+
+The dataset includes epidemiological information across **237+ countries**, covering the period from 1980 to 2024.
+
+---
 
 ## Project Structure
 
-```
+```text
 epiworld/
-├── server.py               # Flask routes only -- parses requests, delegates to the
-│                           #   modules below, turns results/exceptions into HTTP responses
-├── config.py               # Central config (env-driven; see Configuration)
-├── data_loader.py           # Loads disease_data.json
-├── ml_features.py           # Feature engineering, walk-forward validation, metrics
-├── ml_models.py             # run_sklearn() / run_rnn() -- trains one model, one disease
-├── forecast_service.py      # Orchestration: series selection, model dispatch, best-model pick
-├── explainability.py        # SHAP values for the tree-based models (optional dependency)
-├── chatbot.py               # EpiGem AI: scope filter, local RAG fallback, Groq system prompt
-├── disease_data.json        # Bundled reference dataset (WHO/UNAIDS/OWID)
+│
+├── server.py
+│   └── Flask application routes and HTTP request handling
+│
+├── config.py
+│   └── Central environment-driven configuration
+│
+├── data_loader.py
+│   └── Loads disease_data.json
+│
+├── ml_features.py
+│   └── Feature engineering, walk-forward validation, and metrics
+│
+├── ml_models.py
+│   └── Model training functions: run_sklearn() and run_rnn()
+│
+├── forecast_service.py
+│   └── Series selection, model dispatch, and best-model selection
+│
+├── explainability.py
+│   └── SHAP-based feature attribution for tree-based models
+│
+├── chatbot.py
+│   └── EpiGem AI assistant, scope filtering, and local RAG fallback
+│
+├── disease_data.json
+│   └── Bundled epidemiological reference dataset
+│
 ├── requirements.txt
-├── .env.example             # Copy to .env and fill in your Groq key
+│   └── Project dependencies
+│
+├── .env.example
+│   └── Example environment configuration
+│
 ├── static/
-│   ├── css/main.css
-│   └── js/dashboard.js
+│   ├── css/
+│   │   └── main.css
+│   │
+│   ├── js/
+│   │   └── dashboard.js
+│   │
+│   └── vendor/
+│       └── Locally bundled frontend libraries
+│
 └── templates/
-    ├── base.html            # Shared layout, nav, design tokens
+    ├── base.html
     ├── home.html
     ├── dashboard.html
     ├── upload.html
     └── about.html
 ```
 
-Each module has a single responsibility, so adding a new model only means
-touching `ml_models.py` + registering it in `forecast_service.ALL_MODEL_NAMES`
--- not editing a single 1,100+ line file that also handles HTTP routing.
+Each module has a dedicated responsibility. Adding a new model primarily requires changes to `ml_models.py` and registration in `forecast_service.ALL_MODEL_NAMES`, without modifying the Flask routing layer.
+
+---
 
 ## Installation
 
-Requires Python 3.11 or 3.12.
+### Requirements
+
+- Python 3.11 or Python 3.12
+- pip package manager
+- Internet connection for dependency installation
+
+### Step 1: Clone the Repository
 
 ```bash
-# 1. Clone and enter the project
 git clone <your-repo-url>
 cd epiworld
-
-# 2. Create and activate a virtual environment
-python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Configure environment variables
-cp .env.example .env
-# then open .env and paste in a Groq API key (free at https://console.groq.com)
-# -- everything except the EpiGem chatbot works without this key.
 ```
 
-If `tensorflow` or `xgboost` fail to build on Windows, installing inside the
-venv above (rather than globally) resolves most version-conflict issues.
+### Step 2: Create a Virtual Environment
 
-## Running
+```bash
+python3 -m venv venv
+```
+
+Activate the environment:
+
+```bash
+# macOS / Linux
+source venv/bin/activate
+
+# Windows
+venv\Scripts\activate
+```
+
+### Step 3: Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Step 4: Configure Environment Variables
+
+```bash
+cp .env.example .env
+```
+
+On Windows:
+
+```powershell
+copy .env.example .env
+```
+
+Open `.env` and add your Groq API key.
+
+Obtain a key from:
+
+https://console.groq.com
+
+> The platform's core forecasting and dashboard functionality works without a Groq API key. The key is required for the Groq-powered EpiGem chatbot functionality.
+
+### Installation Note
+
+If TensorFlow or XGBoost fails to install on Windows, use the virtual environment described above rather than installing packages globally. This helps avoid Python dependency and version conflicts.
+
+---
+
+## Running the Application
+
+Start the Flask application:
 
 ```bash
 python server.py
 ```
 
-The server starts at `http://127.0.0.1:5000` by default. Console output
-confirms the port and whether the EpiGem chatbot is enabled.
+The application runs locally at:
 
-To change host/port, set `EPIWORLD_HOST` / `EPIWORLD_PORT` in `.env`
-(see `.env.example` for all available options).
+```text
+http://127.0.0.1:5000
+```
 
-## Workflow
+The console displays the server port and whether the EpiGem chatbot is enabled.
 
-1. **Home** -- landing page with an interactive world map and platform stats.
-2. **Dashboard** -- opens directly on the Live Summary: the best model is
-   auto-selected and forecast automatically for the current disease.
-   Sidebar sections: Trends & Overview, Risk Map, Early Warning,
-   Explainability, Simulation, and Forecast Settings (for picking a specific
-   model/horizon manually).
-3. **Upload Data** -- upload your own dataset for the same analysis, with a
-   downloadable PDF report.
-4. **About** -- methodology, data sources, and contact information.
+### Changing Host and Port
 
-## Methodology (summary)
+To change the host or port, update the following environment variables in `.env`:
 
-- Series are detrended (log-transform for large counts) before
-  feature-engineered models (Random Forest, XGBoost, Lasso, SVM) see them;
-  Ridge uses trend + lag + moving-average + momentum features directly.
-- LSTM/GRU (2-layer RNN, 64→32 units, Dropout 0.2) are trained on raw
-  sequences for comparison.
-- **Validation:** walk-forward (rolling-origin, expanding-window)
-  cross-validation across 6 folds -- not a single random train/test split --
-  because epidemiological series are short and non-stationary, and ordinary
-  k-fold CV would leak future information into training.
-- **Model selection:** for each disease, all 7 models are trained; the one
-  with the highest out-of-sample (test) R² is auto-selected as the default,
-  falling back to a discounted training R² only when a series is too short
-  to hold out a genuine test fold.
-- **What the UI shows:** the dashboard deliberately does not display raw
-  R²/RMSE/MAE/MAPE/AIC to end users. These are computed and used internally
-  for model selection, but surfaced only as a plain-language Trend
-  (Rising/Falling/Stable) and Forecast Confidence (High/Moderate/Limited)
-  rating, so a non-technical viewer isn't left to misinterpret a bare
-  statistic. The full numeric metrics remain available via the JSON API
-  (`/api/predict`, `/api/all_models`) for evaluation/reporting purposes.
+```env
+EPIWORLD_HOST=127.0.0.1
+EPIWORLD_PORT=5000
+```
 
-Full methodology detail is on the **About** page in the running app.
+Refer to the Configuration section for additional settings.
 
-## Data & Preprocessing
+---
 
-- **Sources:** WHO, UNAIDS, and Our World in Data, covering 1980-2024 across
-  237+ countries for the 7 bundled diseases (COVID-19, AIDS/HIV, Malaria,
-  Dengue, Measles, Hepatitis B, Polio).
-- **Snapshot, not a live feed:** `disease_data.json` is a static bundle
-  captured at build time. There is no scheduled refresh job -- updating the
-  dataset means regenerating and replacing that file.
-- **Leading-zero trimming:** Some diseases have years of all-zero data before
-  reporting began for that disease/region. `forecast_service.select_series()`
-  trims those leading zeros before any model sees the series (implemented as
-  a simple leading-edge scan, not interpolation -- zeros appearing after the
-  series has started are left as real data points).
-- **Missing values (uploaded data):** on the Upload tab, rows missing a year
-  or case value are dropped (`dropna`); non-numeric case/death values are
-  coerced to 0 rather than crashing the request. The year column is validated
-  up front (Comment 8) -- if it contains no parseable numeric/date values at
-  all, the upload is rejected with a clear message instead of silently
-  aggregating to nothing.
-- **Log-transform:** applied automatically whenever a series' maximum
-  absolute value exceeds 1,000, to stabilize variance across the large swings
-  typical of raw case/death counts. This is undone (`expm1`) before any value
-  is returned to the client -- the API never returns log-scale numbers.
-- **Minimum series length:** at least 3 data points after trimming are
-  required for any model to run; fewer than 8 triggers the "small sample"
-  warning in the UI. COVID-19 in the bundled dataset has only 5 usable points
-  after trimming, which is enough for the RNN models but too few for the
-  sklearn-family models to fit at all (see Known limitations below).
+## Application Workflow
 
-See `Epiworld_Model_Evaluation_Report.xlsx` (Methodology sheet) for the
-validation-methodology detail that complements this section -- that document
-covers walk-forward CV and per-model architecture choices, which are about
-*evaluating* the models rather than preprocessing the data.
+Epiworld is organized into four primary sections.
 
+### 1. Home
 
+The landing page provides:
+
+- Interactive global disease map.
+- Platform statistics.
+- Overview of supported infectious diseases.
+- General epidemic intelligence information.
+
+### 2. Dashboard
+
+The dashboard opens directly on the Live Summary screen.
+
+The best-performing model is automatically selected and forecasting starts for the currently selected disease.
+
+The dashboard includes the following sections:
+
+| Dashboard Section | Functionality |
+|---|---|
+| Live Summary | Overall disease statistics and automatic forecasting |
+| Trends & Overview | Historical epidemiological trends |
+| Risk Map | Geographical visualization of disease distribution |
+| Early Warning | Identification of potential future disease increases |
+| Explainability | Model-derived feature importance and SHAP explanations |
+| Simulation | Forecast scenario analysis |
+| Forecast Settings | Manual selection of model and prediction horizon |
+
+### 3. Upload Data
+
+Users can upload their own epidemiological datasets in:
+
+- CSV
+- Excel
+- JSON
+
+The uploaded dataset undergoes preprocessing and forecasting using the same analytical pipeline.
+
+The platform also generates a downloadable PDF report.
+
+### 4. About
+
+Provides information about:
+
+- Platform methodology.
+- Machine learning approaches.
+- Data sources.
+- Model evaluation.
+- Contact information.
+
+---
+
+## Methodology
+
+### 1. Data Preprocessing and Feature Engineering
+
+Epidemiological time-series data undergoes preprocessing before model training.
+
+- Large case and death counts are log-transformed to stabilize variance.
+- Time-series features are generated for forecasting models.
+- Lag, moving-average, momentum, and trend features are used where applicable.
+- Leading zeros are trimmed before forecasting to avoid unnecessary zero-only periods.
+- Uploaded datasets are validated and cleaned before model execution.
+
+### 2. Machine Learning and Deep Learning
+
+The platform implements two primary modelling approaches.
+
+**Traditional Machine Learning**
+
+- Random Forest
+- Ridge Regression
+- Lasso Regression
+- Support Vector Machine
+- XGBoost
+
+These models use detrended and feature-engineered epidemiological time-series data.
+
+Ridge Regression directly uses trend, lag, moving-average, and momentum features.
+
+**Deep Learning**
+
+- Long Short-Term Memory (LSTM)
+- Gated Recurrent Unit (GRU)
+
+Both recurrent neural network models use:
+
+- Two recurrent layers.
+- 64 units in the first layer.
+- 32 units in the second layer.
+- Dropout of 0.2.
+
+These models are trained on raw sequential data for comparison.
+
+### 3. Model Validation
+
+The platform uses **Walk-Forward Cross-Validation** with six expanding-window folds.
+
+This approach is preferred over ordinary random train/test splitting because epidemiological time-series data can be short and non-stationary.
+
+Walk-forward validation ensures that future information is not introduced into the training process.
+
+### 4. Automatic Model Selection
+
+For each disease series:
+
+1. All seven models are evaluated.
+2. Out-of-sample R² is calculated.
+3. Models are compared using their predictive performance.
+4. The model with the highest test R² is selected as the default model.
+5. When a series is too short for a genuine test fold, a discounted training R² is used as a fallback.
+
+### 5. Forecast Interpretation
+
+The dashboard presents predictions through understandable indicators instead of displaying raw statistical metrics to non-technical users.
+
+**Trend Direction**
+
+- Rising
+- Falling
+- Stable
+
+**Forecast Confidence**
+
+- High
+- Moderate
+- Limited
+
+Raw evaluation metrics remain available through the JSON API for technical evaluation and reporting.
+
+---
+
+## Data Sources and Preprocessing
+
+### Data Sources
+
+The bundled epidemiological dataset integrates information from:
+
+- World Health Organization (WHO)
+- UNAIDS
+- Our World in Data (OWID)
+
+### Dataset Coverage
+
+| Parameter | Coverage |
+|---|---|
+| Infectious Diseases | 7 |
+| Countries | 237+ |
+| Historical Period | 1980–2024 |
+| Data Type | Epidemiological case and death statistics |
+| Dataset File | `disease_data.json` |
+
+### Data Preprocessing
+
+**1. Leading-Zero Trimming**
+
+Some diseases have years of zero-valued data before reporting begins for a particular country or region.
+
+The platform removes these leading zeros before model training.
+
+Zeros appearing after the series has started are retained as actual observations.
+
+**2. Missing Values**
+
+For uploaded datasets:
+
+- Rows missing a year or case value are dropped.
+- Non-numeric case and death values are converted to zero.
+- The year column is validated before analysis.
+- Uploads containing no parseable year values are rejected with a clear error message.
+
+**3. Log Transformation**
+
+A log transformation is automatically applied whenever the maximum absolute value of a series exceeds 1,000.
+
+The transformation is reversed using `expm1` before returning results to the client.
+
+Therefore, the API returns predictions in their original scale rather than log-scale values.
+
+**4. Minimum Series Length**
+
+At least three data points are required after trimming.
+
+Series with fewer than eight data points trigger a small-sample warning in the dashboard.
+
+COVID-19 in the bundled dataset has only five usable points after trimming. This limits the ability of traditional machine learning models to fit the series.
+
+### Dataset Update Policy
+
+`disease_data.json` is a static dataset snapshot captured at build time.
+
+It is not a live epidemiological feed and does not have an automatic scheduled refresh mechanism.
+
+Updating the reference data requires regenerating and replacing the JSON file.
+
+---
+
+## API Documentation
+
+All endpoints return JSON responses.
 
 | Endpoint | Method | Purpose |
 |---|---|---|
-| `/api/predict` | POST | Run one model for one disease |
-| `/api/all_models` | POST | Run all 7 models, return best + full comparison |
-| `/api/upload` | POST | Analyze an uploaded CSV/Excel/JSON file |
-| `/api/chat-groq` | POST | EpiGem AI chat (falls back to local answers if Groq is unreachable/unconfigured) |
-| `/api/chat-status` | GET | Whether the Groq-backed chatbot is currently configured/reachable |
-| `/api/explain/<model_name>` | POST | SHAP feature attribution for Random Forest/XGBoost (Comment 12). Returns `{"available": false, "reason": ...}` gracefully if `shap` isn't installed or the model isn't tree-based |
+| `/api/predict` | POST | Run one forecasting model for one disease |
+| `/api/all_models` | POST | Run all seven models and return the best model with a full comparison |
+| `/api/upload` | POST | Analyze uploaded CSV, Excel, or JSON data |
+| `/api/chat-groq` | POST | EpiGem AI chat with local fallback |
+| `/api/chat-status` | GET | Check whether the Groq chatbot is configured and reachable |
+| `/api/explain/<model_name>` | POST | SHAP feature attribution for Random Forest and XGBoost |
 
-All ML endpoints return train/test metrics (R², RMSE, MAE, MAPE, AIC) in
-the JSON response even though the dashboard UI doesn't render them --
-useful for building the consolidated evaluation report mentioned above.
+### Example API Functions
+
+**Single Model Forecasting**
+
+```text
+POST /api/predict
+```
+
+Runs one selected model for a specified infectious disease.
+
+**Multiple Model Comparison**
+
+```text
+POST /api/all_models
+```
+
+Runs the available forecasting models and returns:
+
+- Best-performing model.
+- Forecast results.
+- Model comparison.
+- Training and testing metrics.
+
+**Dataset Upload**
+
+```text
+POST /api/upload
+```
+
+Processes user-uploaded epidemiological data.
+
+**AI Assistant**
+
+```text
+POST /api/chat-groq
+```
+
+Processes natural-language questions through EpiGem AI.
+
+If Groq is unavailable or not configured, the assistant uses its local answer mechanism.
+
+**Model Explainability**
+
+```text
+POST /api/explain/<model_name>
+```
+
+Provides SHAP-based feature attribution for Random Forest and XGBoost.
+
+If SHAP is unavailable or the selected model is not tree-based, the API returns a structured response indicating that the explanation is unavailable.
+
+### Model Evaluation Metrics
+
+All ML endpoints return the following metrics in their JSON responses:
+
+- R² Score
+- Root Mean Squared Error (RMSE)
+- Mean Absolute Error (MAE)
+- Mean Absolute Percentage Error (MAPE)
+- Akaike Information Criterion (AIC)
+
+These metrics are available for technical evaluation and reporting even though they are not directly displayed in the dashboard.
+
+---
+
+## EpiGem AI Assistant
+
+**EpiGem** is the integrated AI-powered assistant designed to answer questions related to the Epiworld platform.
+
+It uses Groq LLaMA 3.1 for natural-language responses.
+
+### Key Capabilities
+
+- Answers questions about supported infectious diseases.
+- Explains epidemiological forecasting results.
+- Provides information about model selection and methodology.
+- Helps users understand disease trends.
+- Explains platform functionality.
+- Restricts responses to platform-related information.
+
+### Architecture
+
+The assistant includes:
+
+1. Scope filtering to restrict unrelated questions.
+2. Groq LLaMA 3.1 integration for AI-generated responses.
+3. Local RAG-based fallback for situations where Groq is unavailable.
+4. Platform-specific context to ground responses in available data.
+
+---
 
 ## Configuration
 
-All configuration lives in `config.py` and is read from environment
-variables (via `.env`, see `.env.example`):
+All configuration settings are maintained in `config.py` and loaded through environment variables.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `GROQ_API_KEY` | *(empty)* | Required for EpiGem AI chat |
+| `GROQ_API_KEY` | Empty | API key for EpiGem AI chat |
 | `GROQ_MODEL` | `llama-3.1-8b-instant` | Groq model name |
 | `EPIWORLD_HOST` | `127.0.0.1` | Flask bind host |
 | `EPIWORLD_PORT` | `5000` | Flask bind port |
-| `EPIWORLD_DEBUG` | `false` | Flask debug mode -- keep `false` in production |
-| `EPIWORLD_DEFAULT_HORIZON` | `5` | Default forecast horizon (years) |
-| `EPIWORLD_MAX_HORIZON` | `20` | Maximum forecast horizon allowed via the API |
+| `EPIWORLD_DEBUG` | `false` | Flask debug mode |
+| `EPIWORLD_DEFAULT_HORIZON` | `5` | Default forecast horizon in years |
+| `EPIWORLD_MAX_HORIZON` | `20` | Maximum API forecast horizon in years |
 
-**Do not commit `.env`.** It's already listed in `.gitignore`. Only
-`.env.example` (no real values) should ever be committed.
+> **Security:** Never commit `.env` or expose API keys in source control. Only `.env.example` containing placeholder values should be committed.
+
+---
 
 ## Frontend Libraries
 
-Chart.js, D3, topojson-client, the world-atlas country boundaries, jsPDF, and
-html2canvas are vendored locally in `static/vendor/` rather than loaded from
-a CDN. This was a deliberate reliability fix, not a style preference: if a
-CDN is slow, blocked by a network policy, or briefly down, the previous
-CDN-based setup would show a blank world map and broken charts with no clear
-indication why -- indistinguishable from an app bug. Versions are pinned to
-exactly what the app was built and tested against (Chart.js 4.4.1, D3 7.8.5,
-topojson-client 3.x, jsPDF 2.5.1, html2canvas 1.4.1).
+The frontend uses locally bundled JavaScript libraries rather than relying on external CDNs.
+
+| Library | Purpose | Version |
+|---|---|---|
+| Chart.js | Data visualization and charts | 4.4.1 |
+| D3.js | Interactive data visualization | 7.8.5 |
+| topojson-client | Geographic data processing | 3.x |
+| world-atlas | Country boundary visualization | Bundled |
+| jsPDF | PDF report generation | 2.5.1 |
+| html2canvas | HTML-to-image conversion | 1.4.1 |
+
+These libraries are stored locally in `static/vendor/`.
+
+This improves reliability when internet access is restricted or external CDNs are unavailable.
+
+---
 
 ## Auto-Load Forecast Performance
 
-Opening the Dashboard triggers an automatic forecast for the default disease.
-For diseases where every sklearn model fails (very short series -- see
-"Known limitations" below), this means training 2 RNN models (LSTM, GRU)
-synchronously before the page has real data to show. Measured on a typical
-machine: ~16-20s for a 5-point series like the bundled COVID-19 data.
+Opening the Dashboard automatically triggers forecasting for the default disease.
 
-Two things address this:
-- The `fast=true` flag (auto-load only; explicit Run Forecast / Run All
-  Models clicks always use full quality) trains fewer epochs (30 vs 100) and
-  fewer Monte Carlo dropout passes (8 vs 20) for the auto-load specifically --
-  measured ~20% faster with no change to output correctness.
-- The dashboard now shows an explicit animated "Training forecast models..."
-  indicator while this is in flight, rather than quiet placeholder text that
-  could be mistaken for a frozen page. If the dashboard looks like it's doing
-  nothing for the first several seconds after opening a disease with only
-  RNN models available, it's this -- give it ~15-20 seconds.
+For diseases with very short historical series, traditional machine learning models may fail, requiring the two recurrent neural network models (LSTM and GRU) to run.
 
-## Known limitations
+For a five-point series such as the bundled COVID-19 dataset, automatic forecasting may take approximately 16–20 seconds on a typical machine.
 
-- Diseases with very few historical data points (e.g. a series with only
-  5 years of usable data) can cause the sklearn-family models to fail to
-  fit; in that case `/api/all_models` returns whichever models succeeded
-  (typically the RNN models) rather than all 7.
-- On extremely short series (COVID-19's 5 usable points is the case in the
-  bundled dataset), the RNN models can forecast down to 0 in later horizon
-  steps. This is a genuine data-volume limitation rather than a code defect --
-  the UI already surfaces it honestly via the "Limited" confidence rating and
-  small-sample warning rather than hiding it.
-- The bundled `disease_data.json` is a static snapshot, not a live feed.
-- SHAP explanations (`/api/explain`) are only implemented for the two
-  tree-based models (Random Forest, XGBoost); Ridge/Lasso/SVM/LSTM/GRU fall
-  back to the existing model-derived Feature Weights panel.
+### Performance Optimization
+
+The platform uses two optimizations:
+
+1. **Fast Auto-Load Mode:** The automatic dashboard forecast uses fewer training epochs (30 instead of 100) and fewer Monte Carlo dropout passes (8 instead of 20). Explicit Run Forecast and Run All Models actions continue to use full-quality settings.
+
+2. **Training Indicator:** The dashboard displays an animated "Training forecast models..." indicator while models are running.
+
+This helps users distinguish active model training from a frozen page.
+
+---
+
+## Known Limitations
+
+- Diseases with very few historical data points may cause traditional machine learning models to fail during training.
+- In such cases, `/api/all_models` returns the models that successfully completed training rather than guaranteeing all seven results.
+- For extremely short series, such as the five usable COVID-19 observations in the bundled dataset, LSTM and GRU may predict values approaching zero at later forecast horizons.
+- The bundled `disease_data.json` is a static snapshot and not a live epidemiological feed.
+- SHAP explanations are implemented only for Random Forest and XGBoost.
+- Ridge, Lasso, SVM, LSTM, and GRU use the existing model-derived Feature Weights panel instead.
+- Forecast confidence is limited by the quantity, quality, and historical coverage of the available data.
+
+The dashboard communicates short-series limitations through its small-sample warning and Limited confidence rating rather than hiding them.
+
+---
 
 ## Evaluation Report
 
-`Epiworld_Model_Evaluation_Report.xlsx` (generated separately, not part of
-this repo's runtime) contains the full walk-forward-validated R2/RMSE/MAE/
-MAPE/AIC for every model x every disease combination -- this is the
-consolidated evaluation Comments 5 and 14 asked for. Regenerate it any time
-by calling `forecast_service.predict_all()` for each disease in
-`data_loader.DISEASE_DATA` and exporting the result dicts; it is intentionally
-a separate artifact rather than a live endpoint, since these are exactly the
-raw numbers the dashboard UI deliberately keeps out of the end-user view.
+The project includes a separately generated evaluation artifact:
 
-## License / Use
+`Epiworld_Model_Evaluation_Report.xlsx`
 
-Research and educational use only.
-#   E p i - W o r l d - A I  
- 
+This workbook contains the full walk-forward-validated evaluation metrics for every model and disease combination.
+
+### Evaluation Metrics
+
+- R²
+- RMSE
+- MAE
+- MAPE
+- AIC
+
+The evaluation report is generated separately from the runtime application.
+
+It can be regenerated by calling `forecast_service.predict_all()` for each disease in `data_loader.DISEASE_DATA` and exporting the resulting dictionaries.
+
+The report provides a consolidated technical evaluation while keeping the primary dashboard focused on understandable epidemiological trends and forecast confidence.
+
+---
+
+## License and Use
+
+**Research and educational use only.**
+
+The platform is intended for academic research, experimentation, and educational purposes.
+
+It is a forecasting and decision-support tool and should not be interpreted as a substitute for official public health surveillance, epidemiological investigation, or professional public health decisions.
+
+---
+
+**Epiworld — Understand Disease Trends. Forecast the Future. Support Public Health Intelligence.**
